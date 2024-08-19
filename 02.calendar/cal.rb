@@ -24,7 +24,7 @@ print ' '
 (first_date.next_day..last_date).each do |date|
   print date.day.to_s.rjust(2)
   date.saturday? ? puts : print(' ')
-  puts if date.day == last_date.day && date.wday != 6
+  puts if date.day == last_date.day && !date.saturday?
 end
 
 puts
