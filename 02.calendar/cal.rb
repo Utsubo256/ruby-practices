@@ -14,7 +14,7 @@ first_date_of_month = Date.new(target_year, target_month, 1)
 last_date_of_month = Date.new(target_year, target_month, -1)
 
 display_month = first_date_of_month.strftime('%B')
-display_days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].join(' ')
+display_days = 'Su Mo Tu We Th Fr Sa'
 
 puts "#{display_month} #{target_year}".center(display_days.size)
 puts display_days
