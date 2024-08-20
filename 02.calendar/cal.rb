@@ -19,9 +19,8 @@ display_days = 'Su Mo Tu We Th Fr Sa'
 puts "#{display_month} #{target_year}".center(display_days.size)
 puts display_days
 
-print first_date.day.to_s.rjust(2 + first_date.wday*3, ' ')
-print ' '
-(first_date.next_day..last_date).each do |date|
+print '   ' * first_date.wday
+(first_date..last_date).each do |date|
   print date.day.to_s.rjust(2)
   date.saturday? ? puts : print(' ')
   puts if date.day == last_date.day && !date.saturday?
