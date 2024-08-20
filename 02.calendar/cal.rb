@@ -23,7 +23,7 @@ print '   ' * first_date.wday
 (first_date..last_date).each do |date|
   print date.day.to_s.rjust(2)
   date.saturday? ? puts : print(' ')
-  puts if date.day == last_date.day && !date.saturday?
+  puts if date == last_date && !date.saturday?
 end
 
 puts
