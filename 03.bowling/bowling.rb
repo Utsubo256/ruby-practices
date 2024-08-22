@@ -10,7 +10,6 @@ frames.each_with_index do |frame, index|
   point +=
     if index == 9
       frames.slice(9..-1).flatten.sum
-      break
     elsif frame.first == 10
       if frames[index + 1].first == 10
         20 + frames[index + 2].first
@@ -22,6 +21,7 @@ frames.each_with_index do |frame, index|
     else
       frame.sum
     end
+  break if index == 9
 end
 
 puts point
