@@ -1,6 +1,5 @@
+#!/usr/bin/env ruby
 # frozen_string_literal: true
-
-# !/usr/bin/env ruby
 
 score = ARGV[0].gsub(/X/, '10,0')
 shots = score.split(',').map(&:to_i)
