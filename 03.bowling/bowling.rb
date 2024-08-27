@@ -14,7 +14,7 @@ frames.each_with_index do |frame, index|
       frames.slice(9..-1).flatten.sum
     elsif frame.first == STRIKE
       if frames[index + 1].first == STRIKE
-        20 + frames[index + 2].first
+        STRIKE + frames[index + 1].first + frames[index + 2].first
       else
         STRIKE + frames[index + 1].sum
       end
