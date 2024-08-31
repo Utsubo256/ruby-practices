@@ -18,8 +18,8 @@ frames.each_with_index do |frame, index|
       else
         STRIKE + frames[index + 1].sum
       end
-    elsif frame.sum == STRIKE
-      STRIKE + frames[index + 1].first
+    elsif frame.sum == 10
+      frame.sum + frames[index + 1].first
     else
       frame.sum
     end
