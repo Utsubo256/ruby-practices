@@ -24,8 +24,8 @@ def format_resources(resources)
   column_number = (resources.size + COLUMN - 1) / COLUMN
   exit if column_number.zero?
   sliced_resources = resources.each_slice(column_number).to_a
-  alligned_resources = sliced_resources.map do |resource|
-    resource.map { |name| name.ljust(resource.map(&:size).max + 2) }
+  alligned_resources = sliced_resources.map do |names|
+    names.map { |name| name.ljust(names.map(&:size).max + 2) }
   end
   (column_number - alligned_resources[-1].size).times { alligned_resources[-1] << nil }
   alligned_resources.transpose
