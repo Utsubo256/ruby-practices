@@ -1,19 +1,31 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'optparse'
+
 COLUMN = 3
 
 def main
-  resources = target_resources
+  params = options
+  resources = target_resources(params)
   sorted_resources = sort_resources(resources)
   formatted_resources = format_resources(sorted_resources)
   display_resources(formatted_resources)
 end
 
-def target_resources
+def options
+  opt = OptionParser.new
+  params = {}
+  opt.on('-a') { |v| params[:a] = v }
+  opt.parse!(ARGV)
+  params
+end
+
+def target_resources(params)
   current_directory = Dir.pwd
   resources = Dir.children(current_directory)
-  resources.reject { |file| file.start_with?('.') }
+  resources = resources.reject { |file| file.start_with?('.') } unless params[:a]
+  resources
 end
 
 def sort_resources(resources)
