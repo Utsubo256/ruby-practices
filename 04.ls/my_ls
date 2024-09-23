@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+COLUMN = 3
+
+def main
+  resources = target_resources
+  sorted_resources = sort_resources(resources)
+  formatted_resources = format_resources(sorted_resources)
+  display_resources(formatted_resources)
+end
+
+def target_resources
+  current_directory = Dir.pwd
+  resources = Dir.children(current_directory)
+  resources.reject { |file| file.start_with?('.') }
+end
+
+def sort_resources(resources)
+  resources.sort_by { |resource| resource.downcase.gsub(/[.\-_]/, '') }
+end
+
+def format_resources(resources)
+  column_number = (resources.size + COLUMN - 1) / COLUMN
+  exit if column_number.zero?
+  sliced_resources = resources.each_slice(column_number).to_a
+  alligned_resources = sliced_resources.map do |names|
+    names.map { |name| name.ljust(names.map(&:size).max + 2) }
+  end
+  (column_number - alligned_resources[-1].size).times { alligned_resources[-1] << nil }
+  alligned_resources.transpose
+end
+
+def display_resources(resources)
+  resources.each do |column|
+    puts column.compact.join
+  end
+end
+
+main
