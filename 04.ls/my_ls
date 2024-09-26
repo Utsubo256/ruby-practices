@@ -22,8 +22,7 @@ def options
 end
 
 def target_resources(params)
-  current_directory = Dir.pwd
-  resources = Dir.children(current_directory)
+  resources = Dir.entries('.')
   resources = resources.reject { |file| file.start_with?('.') } unless params[:a]
   resources
 end
