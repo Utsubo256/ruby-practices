@@ -7,8 +7,8 @@ COLUMN = 3
 
 def main
   params = options
-  resources = target_resources(params)
-  sorted_resources = sort_resources(resources)
+  resources = target_resources
+  sorted_resources = sort_resources(resources, params)
   formatted_resources = format_resources(sorted_resources)
   display_resources(formatted_resources)
 end
@@ -16,19 +16,20 @@ end
 def options
   opt = OptionParser.new
   params = {}
-  opt.on('-a') { |v| params[:a] = v }
+  opt.on('-r') { |v| params[:r] = v }
   opt.parse!(ARGV)
   params
 end
 
-def target_resources(params)
+def target_resources
   resources = Dir.entries('.')
-  resources = resources.reject { |file| file.start_with?('.') } unless params[:a]
-  resources
+  resources.reject { |file| file.start_with?('.') }
 end
 
-def sort_resources(resources)
-  resources.sort_by { |resource| resource.downcase.gsub(/[.\-_]/, '') }
+def sort_resources(resources, params)
+  resources = resources.sort_by { |resource| resource.downcase.gsub(/[.\-_]/, '') }
+  resources = resources.reverse if params[:r]
+  resources
 end
 
 def format_resources(resources)
