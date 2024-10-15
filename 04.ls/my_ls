@@ -7,29 +7,32 @@ COLUMN = 3
 
 def main
   params = options
-  resources = target_resources
-  sorted_resources = sort_resources(resources, params)
-  formatted_resources = format_resources(sorted_resources)
-  display_resources(formatted_resources)
+  resources = target_resources(params)
+  sorted_resources = sort_resources(resources)
+  if params[:l]
+    formatted_resources = format_resources_for_l(sorted_resources)
+    display_resources_for_l(formatted_resources)
+  else
+    formatted_resources = format_resources(sorted_resources)
+    display_resources(formatted_resources)
+  end
 end
 
 def options
   opt = OptionParser.new
   params = {}
-  opt.on('-r') { |v| params[:r] = v }
+  opt.on('-l') { |v| params[:l] = v }
   opt.parse!(ARGV)
   params
 end
 
-def target_resources
-  resources = Dir.entries('.')
+def target_resources(params)
+  resources = Dir.children('.')
   resources.reject { |file| file.start_with?('.') }
 end
 
-def sort_resources(resources, params)
-  resources = resources.sort_by { |resource| resource.downcase.gsub(/[.\-_]/, '') }
-  resources = resources.reverse if params[:r]
-  resources
+def sort_resources(resources)
+  resources.sort_by { |resource| resource.downcase.gsub(/[.\-_]/, '') }
 end
 
 def format_resources(resources)
@@ -43,10 +46,37 @@ def format_resources(resources)
   alligned_resources.transpose
 end
 
+def format_resources_for_l(resources)
+  files = []
+  formatted_resources = []
+  resources.each { |resource| files << File.new(File.absolute_path(resource)) }
+  files.each do |file|
+    permission = file
+    hard_link_count = file
+    user = file
+    group = file
+    size = file
+    stamp = file
+    formatted_resources << [permission, hard_link_count, user, group, size, stamp]
+  end
+  # ここでpermission以降の要素の縦列の長さを揃える処理が必要
+
+  formatted_resources
+end
+
+def to_permissions(binary)
+  binary.chars.each_slice(3).each do |aaa|
+    
+  end
+end
+
 def display_resources(resources)
   resources.each do |column|
     puts column.compact.join
   end
+end
+
+def display_resources_for_l(resources)
 end
 
 main
