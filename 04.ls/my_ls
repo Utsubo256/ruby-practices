@@ -2,12 +2,13 @@
 # frozen_string_literal: true
 
 require 'optparse'
+require 'etc'
 
 COLUMN = 3
 
 def main
   params = options
-  resources = target_resources(params)
+  resources = target_resources
   sorted_resources = sort_resources(resources)
   if params[:l]
     formatted_resources = format_resources_for_l(sorted_resources)
@@ -26,7 +27,7 @@ def options
   params
 end
 
-def target_resources(params)
+def target_resources
   resources = Dir.children('.')
   resources.reject { |file| file.start_with?('.') }
 end
@@ -47,27 +48,65 @@ def format_resources(resources)
 end
 
 def format_resources_for_l(resources)
-  files = []
   formatted_resources = []
-  resources.each { |resource| files << File.new(File.absolute_path(resource)) }
-  files.each do |file|
-    permission = file
-    hard_link_count = file
-    user = file
-    group = file
-    size = file
-    stamp = file
-    formatted_resources << [permission, hard_link_count, user, group, size, stamp]
+  files = target_files(resources)
+  max_nlink = files.map { |file| file[:nlink] }.max.to_s.size
+  max_user = files.map { |file| file[:user] }.map(&:size).max
+  max_group = files.map { |file| file[:group] }.map(&:size).max
+  max_file_size = files.map { |file| file[:file_size] }.max.to_s.size
+  files.map do |file|
+    file[:nlink] = file[:nlink].to_s.rjust(max_nlink, ' ')
+    file[:user] = file[:user].ljust(max_user, ' ')
+    file[:group] = file[:group].ljust(max_group, ' ')
+    file[:file_size] = file[:file_size].to_s.rjust(max_file_size, ' ')
+    formatted_resources << file
   end
-  # ここでpermission以降の要素の縦列の長さを揃える処理が必要
-
   formatted_resources
 end
 
-def to_permissions(binary)
-  binary.chars.each_slice(3).each do |aaa|
-    
+def target_files(resources)
+  files = []
+  resources.each do |resource|
+    files << target_file_info(resource)
   end
+  files
+end
+
+def target_file_info(resource)
+  file_stat = File.new(File.absolute_path(resource)).stat
+  blksize = file_stat.blocks / 2 # OS側では1ブロックサイズ1024bytes, Ruby側では512bytesで計算されるため補正
+  file_type = target_file_type(file_stat.ftype)
+  permission = target_permission(file_stat.mode)
+  file_permission = file_type + permission
+  nlink = file_stat.nlink
+  user = Etc.getpwuid(file_stat.uid).name
+  group = Etc.getgrgid(file_stat.gid).name
+  file_size = file_stat.size
+  mtime = file_stat.mtime.strftime('%b %e %R')
+  { blksize:, file_permission:, nlink:, user:, group:, file_size:, mtime:, resource: }
+end
+
+def target_file_type(ftype)
+  {
+    'file' => '-',
+    'directory' => 'd',
+    'characterSpecial' => 'c',
+    'blockSpecial' => 'b',
+    'fifo' => 'p',
+    'link' => 'l',
+    'socket' => 's'
+  }[ftype]
+end
+
+def target_permission(mode)
+  binary = mode.to_s(2)[-9..]
+  permission_attributes = []
+  binary.chars.each_slice(3) do |attributes|
+    permission_attributes << (attributes[0] == '1' ? 'r' : '-')
+    permission_attributes << (attributes[1] == '1' ? 'w' : '-')
+    permission_attributes << (attributes[2] == '1' ? 'x' : '-')
+  end
+  permission_attributes.join
 end
 
 def display_resources(resources)
@@ -77,6 +116,12 @@ def display_resources(resources)
 end
 
 def display_resources_for_l(resources)
+  total_blksize = resources.map { |resource| resource[:blksize] }.sum
+  resources.map { |resource| resource.delete(:blksize) }
+  puts "total #{total_blksize}"
+  resources.each do |resource|
+    puts resource.values.join(' ')
+  end
 end
 
 main
