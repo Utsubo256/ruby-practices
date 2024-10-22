@@ -5,6 +5,15 @@ require 'optparse'
 require 'etc'
 
 COLUMN = 3
+FILE_TYPE = {
+  'file' => '-',
+  'directory' => 'd',
+  'characterSpecial' => 'c',
+  'blockSpecial' => 'b',
+  'fifo' => 'p',
+  'link' => 'l',
+  'socket' => 's'
+}.freeze
 
 def main
   params = options
@@ -65,7 +74,7 @@ end
 def target_file_info(resource)
   file_stat = File.new(File.absolute_path(resource)).stat
   blksize = file_stat.blocks / 2 # OS側では1ブロックサイズ1024bytes, Ruby側では512bytesで計算されるため補正
-  file_type = target_file_type(file_stat.ftype)
+  file_type = FILE_TYPE[file_stat.ftype]
   permission = target_permission(file_stat.mode)
   file_permission = file_type + permission
   nlink = file_stat.nlink
@@ -74,18 +83,6 @@ def target_file_info(resource)
   file_size = file_stat.size
   mtime = file_stat.mtime.strftime('%b %e %R')
   { blksize:, file_permission:, nlink:, user:, group:, file_size:, mtime:, resource: }
-end
-
-def target_file_type(ftype)
-  {
-    'file' => '-',
-    'directory' => 'd',
-    'characterSpecial' => 'c',
-    'blockSpecial' => 'b',
-    'fifo' => 'p',
-    'link' => 'l',
-    'socket' => 's'
-  }[ftype]
 end
 
 def target_permission(mode)
