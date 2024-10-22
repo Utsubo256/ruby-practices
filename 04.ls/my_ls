@@ -100,9 +100,9 @@ end
 
 def display_resources_for_l(resources)
   total_blksize = resources.sum { |resource| resource[:blksize] }
-  resources.map { |resource| resource.delete(:blksize) }
   puts "total #{total_blksize}"
   resources.each do |resource|
+    resource.delete(:blksize)
     puts resource.values.join(' ')
   end
 end
