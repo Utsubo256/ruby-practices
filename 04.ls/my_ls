@@ -2,34 +2,47 @@
 # frozen_string_literal: true
 
 require 'optparse'
+require 'etc'
 
 COLUMN = 3
+FILE_TYPE = {
+  'file' => '-',
+  'directory' => 'd',
+  'characterSpecial' => 'c',
+  'blockSpecial' => 'b',
+  'fifo' => 'p',
+  'link' => 'l',
+  'socket' => 's'
+}.freeze
 
 def main
   params = options
   resources = target_resources
-  sorted_resources = sort_resources(resources, params)
-  formatted_resources = format_resources(sorted_resources)
-  display_resources(formatted_resources)
+  sorted_resources = sort_resources(resources)
+  if params[:l]
+    formatted_resources = format_resources_for_l(sorted_resources)
+    display_resources_for_l(formatted_resources)
+  else
+    formatted_resources = format_resources(sorted_resources)
+    display_resources(formatted_resources)
+  end
 end
 
 def options
   opt = OptionParser.new
   params = {}
-  opt.on('-r') { |v| params[:r] = v }
+  opt.on('-l') { |v| params[:l] = v }
   opt.parse!(ARGV)
   params
 end
 
 def target_resources
-  resources = Dir.entries('.')
+  resources = Dir.children('.')
   resources.reject { |file| file.start_with?('.') }
 end
 
-def sort_resources(resources, params)
-  resources = resources.sort_by { |resource| resource.downcase.gsub(/[.\-_]/, '') }
-  resources = resources.reverse if params[:r]
-  resources
+def sort_resources(resources)
+  resources.sort_by { |resource| resource.downcase.gsub(/[.\-_]/, '') }
 end
 
 def format_resources(resources)
@@ -43,9 +56,54 @@ def format_resources(resources)
   alligned_resources.transpose
 end
 
+def format_resources_for_l(resources)
+  files = resources.map { |resource| target_file_info(resource) }
+  max_nlink = files.map { |file| file[:nlink] }.max.to_s.size
+  max_user = files.map { |file| file[:user].size }.max
+  max_group = files.map { |file| file[:group].size }.max
+  max_file_size = files.map { |file| file[:file_size] }.max.to_s.size
+  files.map do |file|
+    file[:nlink] = file[:nlink].to_s.rjust(max_nlink, ' ')
+    file[:user] = file[:user].ljust(max_user, ' ')
+    file[:group] = file[:group].ljust(max_group, ' ')
+    file[:file_size] = file[:file_size].to_s.rjust(max_file_size, ' ')
+    file
+  end
+end
+
+def target_file_info(resource)
+  file_stat = File.new(File.absolute_path(resource)).stat
+  blksize = file_stat.blocks / 2 # OS側では1ブロックサイズ1024bytes, Ruby側では512bytesで計算されるため補正
+  file_type = FILE_TYPE[file_stat.ftype]
+  permission = target_permission(file_stat.mode)
+  file_permission = file_type + permission
+  nlink = file_stat.nlink
+  user = Etc.getpwuid(file_stat.uid).name
+  group = Etc.getgrgid(file_stat.gid).name
+  file_size = file_stat.size
+  mtime = file_stat.mtime.strftime('%b %e %R')
+  { blksize:, file_permission:, nlink:, user:, group:, file_size:, mtime:, resource: }
+end
+
+def target_permission(mode)
+  binary = mode.to_s(2)[-9..]
+  binary.chars.each_slice(3).map do |r, w, x|
+    "#{r == '1' ? 'r' : '-'}#{w == '1' ? 'w' : '-'}#{x == '1' ? 'x' : '-'}"
+  end.join
+end
+
 def display_resources(resources)
   resources.each do |column|
     puts column.compact.join
+  end
+end
+
+def display_resources_for_l(resources)
+  total_blksize = resources.sum { |resource| resource[:blksize] }
+  puts "total #{total_blksize}"
+  resources.each do |resource|
+    resource.delete(:blksize)
+    puts resource.values.join(' ')
   end
 end
 
