@@ -17,8 +17,8 @@ FILE_TYPE = {
 
 def main
   params = options
-  resources = target_resources
-  sorted_resources = sort_resources(resources)
+  resources = target_resources(params)
+  sorted_resources = sort_resources(resources, params)
   if params[:l]
     formatted_resources = format_resources_for_l(sorted_resources)
     display_resources_for_l(formatted_resources)
@@ -31,18 +31,23 @@ end
 def options
   opt = OptionParser.new
   params = {}
+  opt.on('-a') { |v| params[:a] = v }
+  opt.on('-r') { |v| params[:r] = v }
   opt.on('-l') { |v| params[:l] = v }
   opt.parse!(ARGV)
   params
 end
 
-def target_resources
-  resources = Dir.children('.')
-  resources.reject { |file| file.start_with?('.') }
+def target_resources(params)
+  resources = Dir.entries('.')
+  resources = resources.reject { |file| file.start_with?('.') } unless params[:a]
+  resources
 end
 
-def sort_resources(resources)
-  resources.sort_by { |resource| resource.downcase.gsub(/[.\-_]/, '') }
+def sort_resources(resources, params)
+  resources = resources.sort_by { |resource| resource.downcase.gsub(/[.\-_]/, '') }
+  resources = resources.reverse if params[:r]
+  resources
 end
 
 def format_resources(resources)
