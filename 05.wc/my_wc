@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'optparse'
+require 'etc'
+
+def main
+  params = options
+  args = ARGV
+  file_details = file_details(args)
+  formatted_files = format_files(files)
+  display_files(formatted_files)
+end
+
+def options
+  opt = OptionParser.new
+  params = {}
+  opt.on('-l') { |v| params[:l] = v }
+  opt.on('-w') { |v| params[:w] = v }
+  opt.on('-c') { |v| params[:c] = v }
+  opt.parse!(ARGV)
+  params
+end
+
+def file_details(args)
+end
+
+def format_files(files)
+
+end
+
+def display_files(files)
+end
+
+main
