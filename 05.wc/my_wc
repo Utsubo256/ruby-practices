@@ -8,8 +8,8 @@ def main
   params = options
   args = ARGV
   file_details = file_details(args)
-  formatted_files = format_files(files)
-  display_files(formatted_files)
+  display_files(file_details, params)
+  display_total_files(file_details, params) if file_details.size >= 2
 end
 
 def options
@@ -23,13 +23,36 @@ def options
 end
 
 def file_details(args)
+  args.map do |arg|
+    file = File.new(arg)
+    content = file.read
+    nline = content.count("\n")
+    nword = content.gsub(/\t|\n/, ' ').strip.squeeze(" ").count(' ') + 1
+    byte_size = file.size
+    { nline:, nword:, byte_size:, name: arg }
+  end
 end
 
-def format_files(files)
-
+def display_files(file_details, params)
+  max_digit = file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
+  file_details.each do |file_detail|
+  target_details = []
+    target_details << file_detail[:nline].to_s.rjust(max_digit, ' ') if params[:l] || params.empty?
+    target_details << file_detail[:nword].to_s.rjust(max_digit, ' ') if params[:w] || params.empty?
+    target_details << file_detail[:byte_size].to_s.rjust(max_digit, ' ') if params[:c] || params.empty?
+    target_details << file_detail[:name]
+    puts target_details.join(' ')
+  end
 end
 
-def display_files(files)
+def display_total_files(file_details, params)
+  target_details = []
+  max_digit = file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
+  target_details << file_details.sum { |file| file[:nline] }.to_s.rjust(max_digit, ' ') if params[:l] || params.empty?
+  target_details << file_details.sum { |file| file[:nword] }.to_s.rjust(max_digit, ' ') if params[:w] || params.empty?
+  target_details << file_details.sum { |file| file[:byte_size] }.to_s.rjust(max_digit, ' ') if params[:c] || params.empty?
+  target_details << "total"
+  puts target_details.join(' ')
 end
 
 main
