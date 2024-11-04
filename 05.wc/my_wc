@@ -6,14 +6,15 @@ require 'etc'
 
 def main
   params = options
+  display_types = display_types(params)
   args = ARGV
   if args.any?
     file_details = file_details(args)
-    display_wc(file_details, params)
-    display_total_wc(file_details, params) if file_details.size >= 2
+    display_wc(file_details, display_types)
+    display_total_wc(file_details, display_types) if file_details.size >= 2
   else
     buffer = $stdin.read
-    display_wc_for_stdin(buffer, params)
+    display_wc_for_stdin(buffer, display_types)
   end
 end
 
@@ -27,47 +28,50 @@ def options
   params
 end
 
+def display_types(params)
+  types = []
+  types << :nline if params[:l] || params.empty?
+  types << :nword if params[:w] || params.empty?
+  types << :byte_size if params[:c] || params.empty?
+  types
+end
+
 def file_details(args)
   args.map do |arg|
     file = File.new(arg)
     content = file.read
     nline = content.count("\n")
-    nword = content.gsub(/\t|\n/, ' ').strip.squeeze(" ").count(' ') + 1
+    nword = content.gsub(/\t|\n/, ' ').strip.squeeze(' ').count(' ') + 1
     byte_size = file.size
     { nline:, nword:, byte_size:, name: arg }
   end
 end
 
-def display_wc(file_details, params)
+def display_wc(file_details, display_types)
   max_digit = file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
   file_details.each do |file_detail|
-    target_details = []
-    target_details << file_detail[:nline].to_s.rjust(max_digit, ' ') if params[:l] || params.empty?
-    target_details << file_detail[:nword].to_s.rjust(max_digit, ' ') if params[:w] || params.empty?
-    target_details << file_detail[:byte_size].to_s.rjust(max_digit, ' ') if params[:c] || params.empty?
-    target_details << file_detail[:name]
-    puts target_details.join(' ')
+    details = display_types.map { |type| file_detail[type].to_s.rjust(max_digit, ' ') }
+    puts details.push(file_detail[:name]).join(' ')
   end
 end
 
-def display_total_wc(file_details, params)
-  target_details = []
+def display_total_wc(file_details, display_types)
   max_digit = file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
-  target_details << file_details.sum { |file| file[:nline] }.to_s.rjust(max_digit, ' ') if params[:l] || params.empty?
-  target_details << file_details.sum { |file| file[:nword] }.to_s.rjust(max_digit, ' ') if params[:w] || params.empty?
-  target_details << file_details.sum { |file| file[:byte_size] }.to_s.rjust(max_digit, ' ') if params[:c] || params.empty?
-  target_details << "total"
-  puts target_details.join(' ')
+  details = display_types.map do |type|
+    file_details.sum { |file| file[type] }.to_s.rjust(max_digit, ' ')
+  end
+  puts details.push('total').join(' ')
 end
 
-def display_wc_for_stdin(buffer, params)
-  target_details = []
-  target_details << buffer.count("\n") if params[:l] || params.empty?
-  target_details << buffer.gsub(/\t|\n/, ' ').strip.squeeze(' ').count(' ') + 1 if params[:w] || params.empty?
-  target_details << buffer.bytesize if params[:c] || params.empty?
-  formatted_details = target_details.map { |target_detail| target_detail.to_s.rjust(7, ' ') }
-  formatted_details = formatted_details.map(&:strip) if formatted_details.size == 1
-  puts formatted_details.join(' ')
+def display_wc_for_stdin(buffer, display_types)
+  details = {
+    nline: buffer.count("\n"),
+    nword: buffer.gsub(/\t|\n/, ' ').strip.squeeze(' ').count(' ') + 1,
+    byte_size: buffer.bytesize
+  }
+  target_details = display_types.map { |type| details[type].to_s.rjust(7, ' ') }
+  target_details = target_details.map(&:strip) if target_details.size == 1
+  puts target_details.join(' ')
 end
 
 main
