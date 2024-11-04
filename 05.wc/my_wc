@@ -7,9 +7,14 @@ require 'etc'
 def main
   params = options
   args = ARGV
-  file_details = file_details(args)
-  display_files(file_details, params)
-  display_total_files(file_details, params) if file_details.size >= 2
+  if args.any?
+    file_details = file_details(args)
+    display_wc(file_details, params)
+    display_total_wc(file_details, params) if file_details.size >= 2
+  else
+    buffer = $stdin.read
+    display_wc_for_stdin(buffer, params)
+  end
 end
 
 def options
@@ -33,10 +38,10 @@ def file_details(args)
   end
 end
 
-def display_files(file_details, params)
+def display_wc(file_details, params)
   max_digit = file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
   file_details.each do |file_detail|
-  target_details = []
+    target_details = []
     target_details << file_detail[:nline].to_s.rjust(max_digit, ' ') if params[:l] || params.empty?
     target_details << file_detail[:nword].to_s.rjust(max_digit, ' ') if params[:w] || params.empty?
     target_details << file_detail[:byte_size].to_s.rjust(max_digit, ' ') if params[:c] || params.empty?
@@ -45,7 +50,7 @@ def display_files(file_details, params)
   end
 end
 
-def display_total_files(file_details, params)
+def display_total_wc(file_details, params)
   target_details = []
   max_digit = file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
   target_details << file_details.sum { |file| file[:nline] }.to_s.rjust(max_digit, ' ') if params[:l] || params.empty?
@@ -53,6 +58,16 @@ def display_total_files(file_details, params)
   target_details << file_details.sum { |file| file[:byte_size] }.to_s.rjust(max_digit, ' ') if params[:c] || params.empty?
   target_details << "total"
   puts target_details.join(' ')
+end
+
+def display_wc_for_stdin(buffer, params)
+  target_details = []
+  target_details << buffer.count("\n") if params[:l] || params.empty?
+  target_details << buffer.gsub(/\t|\n/, ' ').strip.squeeze(' ').count(' ') + 1 if params[:w] || params.empty?
+  target_details << buffer.bytesize if params[:c] || params.empty?
+  formatted_details = target_details.map { |target_detail| target_detail.to_s.rjust(7, ' ') }
+  formatted_details = formatted_details.map(&:strip) if formatted_details.size == 1
+  puts formatted_details.join(' ')
 end
 
 main
