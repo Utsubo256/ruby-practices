@@ -5,35 +5,35 @@ require 'optparse'
 require 'etc'
 
 def main
-  params = options
-  display_types = display_types(params)
+  options = find_options
+  output_fields = find_output_fields(options)
   args = ARGV
   if args.any?
     file_details = file_details(args)
-    display_wc(file_details, display_types)
-    display_total_wc(file_details, display_types) if file_details.size >= 2
+    display_wc(file_details, output_fields)
+    display_total_wc(file_details, output_fields) if file_details.size >= 2
   else
     buffer = $stdin.read
-    display_wc_for_stdin(buffer, display_types)
+    display_wc_for_stdin(buffer, output_fields)
   end
 end
 
-def options
+def find_options
   opt = OptionParser.new
-  params = {}
-  opt.on('-l') { |v| params[:l] = v }
-  opt.on('-w') { |v| params[:w] = v }
-  opt.on('-c') { |v| params[:c] = v }
+  options = {}
+  opt.on('-l') { |v| options[:l] = v }
+  opt.on('-w') { |v| options[:w] = v }
+  opt.on('-c') { |v| options[:c] = v }
   opt.parse!(ARGV)
-  params
+  options
 end
 
-def display_types(params)
-  types = []
-  types << :nline if params[:l] || params.empty?
-  types << :nword if params[:w] || params.empty?
-  types << :byte_size if params[:c] || params.empty?
-  types
+def find_output_fields(options)
+  fields = []
+  fields << :nline if options[:l] || options.empty?
+  fields << :nword if options[:w] || options.empty?
+  fields << :byte_size if options[:c] || options.empty?
+  fields
 end
 
 def file_details(args)
@@ -47,30 +47,30 @@ def file_details(args)
   end
 end
 
-def display_wc(file_details, display_types)
+def display_wc(file_details, output_fields)
   max_digit = file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
   file_details.each do |file_detail|
-    details = display_types.map { |type| file_detail[type].to_s.rjust(max_digit, ' ') }
+    details = output_fields.map { |type| file_detail[type].to_s.rjust(max_digit, ' ') }
     details = details.map(&:strip) if file_details.size == 1 && details.size == 1
     puts details.push(file_detail[:name]).join(' ')
   end
 end
 
-def display_total_wc(file_details, display_types)
+def display_total_wc(file_details, output_fields)
   max_digit = file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
-  details = display_types.map do |type|
+  details = output_fields.map do |type|
     file_details.sum { |file| file[type] }.to_s.rjust(max_digit, ' ')
   end
   puts details.push('total').join(' ')
 end
 
-def display_wc_for_stdin(buffer, display_types)
+def display_wc_for_stdin(buffer, output_fields)
   details = {
     nline: buffer.count("\n"),
     nword: buffer.gsub(/\t|\n/, ' ').strip.squeeze(' ').count(' ') + 1,
     byte_size: buffer.bytesize
   }
-  target_details = display_types.map { |type| details[type].to_s.rjust(7, ' ') }
+  target_details = output_fields.map { |type| details[type].to_s.rjust(7, ' ') }
   target_details = target_details.map(&:strip) if target_details.size == 1
   puts target_details.join(' ')
 end
