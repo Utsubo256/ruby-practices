@@ -51,6 +51,7 @@ def display_wc(file_details, display_types)
   max_digit = file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
   file_details.each do |file_detail|
     details = display_types.map { |type| file_detail[type].to_s.rjust(max_digit, ' ') }
+    details = details.map(&:strip) if file_details.size == 1 && details.size == 1
     puts details.push(file_detail[:name]).join(' ')
   end
 end
