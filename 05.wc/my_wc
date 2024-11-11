@@ -9,13 +9,12 @@ def main
   output_fields = find_output_fields(options)
   file_names = ARGV
   if file_names.any?
-    file_details = find_file_details(file_names)
+    file_details = file_names.map { |file_name| find_file_detail(file_name) }
     max_digit = calc_max_digit(file_details)
     display_wc(file_details, output_fields, max_digit)
     display_total_wc(file_details, output_fields, max_digit) if file_details.size >= 2
   else
-    buffer = $stdin.read
-    display_wc_for_stdin(buffer, output_fields, max_digit)
+    display_wc_for_stdin($stdin.read, output_fields)
   end
 end
 
@@ -37,15 +36,17 @@ def find_output_fields(options)
   fields
 end
 
-def find_file_details(file_names)
-  file_names.map do |arg|
-    file = File.new(arg)
-    content = file.read
-    nline = content.count("\n")
-    nword = content.gsub(/\t|\n/, ' ').strip.squeeze(' ').count(' ') + 1
-    byte_size = file.size
-    { nline:, nword:, byte_size:, name: arg }
-  end
+def find_file_detail(file_name)
+  content = File.read(file_name)
+  wc_info = extract_wc_info(content)
+  { **wc_info, file_name: }
+end
+
+def extract_wc_info(content)
+  nline = content.count("\n")
+  nword = content.gsub(/\t|\n/, ' ').strip.squeeze(' ').count(' ') + 1
+  byte_size = content.bytesize
+  { nline:, nword:, byte_size: }
 end
 
 def calc_max_digit(file_details)
@@ -56,7 +57,7 @@ def display_wc(file_details, output_fields, max_digit)
   file_details.each do |file_detail|
     details = output_fields.map { |type| file_detail[type].to_s.rjust(max_digit, ' ') }
     details = details.map(&:strip) if file_details.size == 1 && details.size == 1
-    puts details.push(file_detail[:name]).join(' ')
+    puts details.push(file_detail[:file_name]).join(' ')
   end
 end
 
@@ -68,11 +69,7 @@ def display_total_wc(file_details, output_fields, max_digit)
 end
 
 def display_wc_for_stdin(buffer, output_fields)
-  details = {
-    nline: buffer.count("\n"),
-    nword: buffer.gsub(/\t|\n/, ' ').strip.squeeze(' ').count(' ') + 1,
-    byte_size: buffer.bytesize
-  }
+  details = extract_wc_info(buffer)
   target_details = output_fields.map { |type| details[type].to_s.rjust(7, ' ') }
   target_details = target_details.map(&:strip) if target_details.size == 1
   puts target_details.join(' ')
