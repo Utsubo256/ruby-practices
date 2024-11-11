@@ -7,9 +7,9 @@ require 'etc'
 def main
   options = find_options
   output_fields = find_output_fields(options)
-  args = ARGV
-  if args.any?
-    file_details = file_details(args)
+  file_names = ARGV
+  if file_names.any?
+    file_details = find_file_details(file_names)
     display_wc(file_details, output_fields)
     display_total_wc(file_details, output_fields) if file_details.size >= 2
   else
@@ -36,8 +36,8 @@ def find_output_fields(options)
   fields
 end
 
-def file_details(args)
-  args.map do |arg|
+def find_file_details(file_names)
+  file_names.map do |arg|
     file = File.new(arg)
     content = file.read
     nline = content.count("\n")
