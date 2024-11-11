@@ -57,7 +57,7 @@ def display_wc(file_details, output_fields, max_digit)
   file_details.each do |file_detail|
     details = output_fields.map { |type| file_detail[type].to_s.rjust(max_digit, ' ') }
     details = details.map(&:strip) if file_details.size == 1 && details.size == 1
-    puts details.push(file_detail[:file_name]).join(' ')
+    puts [*details, file_detail[:file_name]].join(' ')
   end
 end
 
@@ -65,7 +65,7 @@ def display_total_wc(file_details, output_fields, max_digit)
   details = output_fields.map do |type|
     file_details.sum { |file| file[type] }.to_s.rjust(max_digit, ' ')
   end
-  puts details.push('total').join(' ')
+  puts [*details, 'total'].join(' ')
 end
 
 def display_wc_for_stdin(buffer, output_fields)
