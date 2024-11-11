@@ -10,11 +10,12 @@ def main
   file_names = ARGV
   if file_names.any?
     file_details = find_file_details(file_names)
-    display_wc(file_details, output_fields)
-    display_total_wc(file_details, output_fields) if file_details.size >= 2
+    max_digit = calc_max_digit(file_details)
+    display_wc(file_details, output_fields, max_digit)
+    display_total_wc(file_details, output_fields, max_digit) if file_details.size >= 2
   else
     buffer = $stdin.read
-    display_wc_for_stdin(buffer, output_fields)
+    display_wc_for_stdin(buffer, output_fields, max_digit)
   end
 end
 
@@ -47,8 +48,11 @@ def find_file_details(file_names)
   end
 end
 
-def display_wc(file_details, output_fields)
-  max_digit = file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
+def calc_max_digit(file_details)
+  file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
+end
+
+def display_wc(file_details, output_fields, max_digit)
   file_details.each do |file_detail|
     details = output_fields.map { |type| file_detail[type].to_s.rjust(max_digit, ' ') }
     details = details.map(&:strip) if file_details.size == 1 && details.size == 1
@@ -56,8 +60,7 @@ def display_wc(file_details, output_fields)
   end
 end
 
-def display_total_wc(file_details, output_fields)
-  max_digit = file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
+def display_total_wc(file_details, output_fields, max_digit)
   details = output_fields.map do |type|
     file_details.sum { |file| file[type] }.to_s.rjust(max_digit, ' ')
   end
