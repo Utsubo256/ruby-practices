@@ -10,9 +10,10 @@ def main
   file_names = ARGV
   if file_names.any?
     file_details = file_names.map { |file_name| find_file_detail(file_name) }
-    max_digit = calc_max_digit(file_details)
-    display_wc(file_details, output_fields, max_digit)
-    display_total_wc(file_details, output_fields, max_digit) if file_details.size >= 2
+    max_digit = file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
+    formatted_details = format_details(file_details, output_fields, max_digit)
+    formatted_details.each { |file_detail| puts file_detail.join(' ') }
+    display_total_wc(file_details, output_fields, max_digit) if formatted_details.size >= 2
   else
     display_wc_for_stdin($stdin.read, output_fields)
   end
@@ -49,15 +50,11 @@ def extract_wc_info(content)
   { nline:, nword:, byte_size: }
 end
 
-def calc_max_digit(file_details)
-  file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
-end
-
-def display_wc(file_details, output_fields, max_digit)
-  file_details.each do |file_detail|
-    details = output_fields.map { |type| file_detail[type].to_s.rjust(max_digit, ' ') }
-    details = details.map(&:strip) if file_details.size == 1 && details.size == 1
-    puts [*details, file_detail[:file_name]].join(' ')
+def format_details(file_details, output_fields, max_digit)
+  file_details.map do |file_detail|
+    formatted_detail = output_fields.map { |type| file_detail[type].to_s.rjust(max_digit, ' ') }
+    formatted_detail = formatted_detail.map(&:strip) if output_fields.size == 1 && file_details.size == 1
+    [*formatted_detail, file_detail[:file_name]]
   end
 end
 
