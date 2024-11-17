@@ -4,12 +4,18 @@
 require 'optparse'
 require 'etc'
 
+OUTPUT_FIELDS = {
+  l: :nline,
+  w: :nword,
+  c: :byte_size
+}.freeze
+
 def main
-  options = find_options
-  output_fields = find_output_fields(options)
+  options = parse_options
+  output_fields = lookup_output_fields(options)
   file_names = ARGV
   if file_names.any?
-    file_details = file_names.map { |file_name| find_file_detail(file_name) }
+    file_details = file_names.map { |file_name| read_file_detail(File.read(file_name), file_name) }
     max_digit = file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
     formatted_details = format_details(file_details, output_fields, max_digit)
     formatted_details.each { |file_detail| puts file_detail.join(' ') }
@@ -19,7 +25,7 @@ def main
   end
 end
 
-def find_options
+def parse_options
   opt = OptionParser.new
   options = {}
   opt.on('-l') { |v| options[:l] = v }
@@ -29,16 +35,15 @@ def find_options
   options
 end
 
-def find_output_fields(options)
+def lookup_output_fields(options)
   fields = []
-  fields << :nline if options[:l] || options.empty?
-  fields << :nword if options[:w] || options.empty?
-  fields << :byte_size if options[:c] || options.empty?
+  fields << OUTPUT_FIELDS[:l] if options[:l] || options.empty?
+  fields << OUTPUT_FIELDS[:w] if options[:w] || options.empty?
+  fields << OUTPUT_FIELDS[:c] if options[:c] || options.empty?
   fields
 end
 
-def find_file_detail(file_name)
-  content = File.read(file_name)
+def read_file_detail(content, file_name = '')
   wc_info = extract_wc_info(content)
   { **wc_info, file_name: }
 end
@@ -65,9 +70,9 @@ def display_total_wc(file_details, output_fields, max_digit)
   puts [*details, 'total'].join(' ')
 end
 
-def display_wc_for_stdin(buffer, output_fields)
-  details = extract_wc_info(buffer)
-  target_details = output_fields.map { |type| details[type].to_s.rjust(7, ' ') }
+def display_wc_for_stdin(content, output_fields)
+  wc_info = extract_wc_info(content)
+  target_details = output_fields.map { |type| wc_info[type].to_s.rjust(7, ' ') }
   target_details = target_details.map(&:strip) if target_details.size == 1
   puts target_details.join(' ')
 end
