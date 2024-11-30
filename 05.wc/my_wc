@@ -15,14 +15,16 @@ def main
   output_fields = lookup_output_fields(options)
   file_names = ARGV
   if file_names.any?
-    file_details = file_names.map { |file_name| read_file_detail(File.read(file_name), file_name) }
-    max_digit = file_details.sum { |file_detail| file_detail[:byte_size] }.to_s.size
-    formatted_details = format_details(file_details, output_fields, max_digit)
-    formatted_details.each { |file_detail| puts file_detail.join(' ') }
-    display_total_wc(file_details, output_fields, max_digit) if formatted_details.size >= 2
+    wc_details = file_names.map { |file_name| extract_wc_detail(File.read(file_name), file_name) }
+    total_wc_detail = calculate_total_wc_detail(wc_details)
+    wc_details = [*wc_details, total_wc_detail] if wc_details.size >= 2
+    max_digit = total_wc_detail[:byte_size].to_s.size
   else
-    display_wc_for_stdin($stdin.read, output_fields)
+    wc_details = [extract_wc_detail($stdin.read)]
+    max_digit = 7
   end
+  formatted_wc_details = format_wc_details(wc_details, max_digit, output_fields)
+  display_wc_details(formatted_wc_details)
 end
 
 def parse_options
@@ -43,38 +45,30 @@ def lookup_output_fields(options)
   fields
 end
 
-def read_file_detail(content, file_name = '')
-  wc_info = extract_wc_info(content)
-  { **wc_info, file_name: }
-end
-
-def extract_wc_info(content)
+def extract_wc_detail(content, file_name = '')
   nline = content.count("\n")
   nword = content.gsub(/\t|\n/, ' ').strip.squeeze(' ').count(' ') + 1
   byte_size = content.bytesize
-  { nline:, nword:, byte_size: }
+  { nline:, nword:, byte_size:, file_name: }
 end
 
-def format_details(file_details, output_fields, max_digit)
-  file_details.map do |file_detail|
-    formatted_detail = output_fields.map { |type| file_detail[type].to_s.rjust(max_digit, ' ') }
-    formatted_detail = formatted_detail.map(&:strip) if output_fields.size == 1 && file_details.size == 1
-    [*formatted_detail, file_detail[:file_name]]
+def calculate_total_wc_detail(wc_details)
+  nline = wc_details.sum { |detail| detail[:nline] }
+  nword = wc_details.sum { |detail| detail[:nword] }
+  byte_size = wc_details.sum { |detail| detail[:byte_size] }
+  { nline:, nword:, byte_size:, file_name: 'total' }
+end
+
+def format_wc_details(wc_details, max_digit, output_fields)
+  wc_details.map do |wc_detail|
+    formatted_wc_detail = output_fields.map { |type| wc_detail[type] }
+    formatted_wc_detail = formatted_wc_detail.map { |detail| detail.to_s.rjust(max_digit, ' ') } if wc_details.size >= 2 || output_fields.size >= 2
+    [*formatted_wc_detail, wc_detail[:file_name]]
   end
 end
 
-def display_total_wc(file_details, output_fields, max_digit)
-  details = output_fields.map do |type|
-    file_details.sum { |file| file[type] }.to_s.rjust(max_digit, ' ')
-  end
-  puts [*details, 'total'].join(' ')
-end
-
-def display_wc_for_stdin(content, output_fields)
-  wc_info = extract_wc_info(content)
-  target_details = output_fields.map { |type| wc_info[type].to_s.rjust(7, ' ') }
-  target_details = target_details.map(&:strip) if target_details.size == 1
-  puts target_details.join(' ')
+def display_wc_details(wc_details)
+  wc_details.each { |wc_detail| puts wc_detail.join(' ') }
 end
 
 main
