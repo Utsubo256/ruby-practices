@@ -4,15 +4,10 @@
 require 'optparse'
 require 'etc'
 
-OUTPUT_FIELDS = {
-  l: :nline,
-  w: :nword,
-  c: :byte_size
-}.freeze
+ORDERED_OUTPUT_FIELDS = [:nline, :nword, :byte_size].freeze
 
 def main
   options = parse_options
-  output_fields = lookup_output_fields(options)
   file_names = ARGV
   if file_names.any?
     wc_details = file_names.map { |file_name| extract_wc_detail(File.read(file_name), file_name) }
@@ -23,26 +18,18 @@ def main
     wc_details = [extract_wc_detail($stdin.read)]
     max_digit = 7
   end
-  formatted_wc_details = format_wc_details(wc_details, max_digit, output_fields)
+  formatted_wc_details = format_wc_details(wc_details, max_digit, options)
   display_wc_details(formatted_wc_details)
 end
 
 def parse_options
   opt = OptionParser.new
-  options = {}
-  opt.on('-l') { |v| options[:l] = v }
-  opt.on('-w') { |v| options[:w] = v }
-  opt.on('-c') { |v| options[:c] = v }
+  options = []
+  opt.on('-l') { options << :nline }
+  opt.on('-w') { options << :nword }
+  opt.on('-c') { options << :byte_size }
   opt.parse!(ARGV)
-  options
-end
-
-def lookup_output_fields(options)
-  fields = []
-  fields << OUTPUT_FIELDS[:l] if options[:l] || options.empty?
-  fields << OUTPUT_FIELDS[:w] if options[:w] || options.empty?
-  fields << OUTPUT_FIELDS[:c] if options[:c] || options.empty?
-  fields
+  options.empty? ? ORDERED_OUTPUT_FIELDS : options.sort_by { |option| ORDERED_OUTPUT_FIELDS.index(option) }
 end
 
 def extract_wc_detail(content, file_name = '')
@@ -59,10 +46,10 @@ def calculate_total_wc_detail(wc_details)
   { nline:, nword:, byte_size:, file_name: 'total' }
 end
 
-def format_wc_details(wc_details, max_digit, output_fields)
+def format_wc_details(wc_details, max_digit, options)
   wc_details.map do |wc_detail|
-    formatted_wc_detail = output_fields.map { |type| wc_detail[type] }
-    formatted_wc_detail = formatted_wc_detail.map { |detail| detail.to_s.rjust(max_digit, ' ') } if wc_details.size >= 2 || output_fields.size >= 2
+    formatted_wc_detail = options.map { |type| wc_detail[type] }
+    formatted_wc_detail = formatted_wc_detail.map { |detail| detail.to_s.rjust(max_digit, ' ') } if wc_details.size >= 2 || options.size >= 2
     [*formatted_wc_detail, wc_detail[:file_name]]
   end
 end
