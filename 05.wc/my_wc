@@ -5,7 +5,7 @@ require 'optparse'
 require 'etc'
 
 def main
-  options, file_names = parse_options
+  output_fields, file_names = parse_options
   if file_names.any?
     wc_details = file_names.map { |file_name| extract_wc_detail(File.read(file_name), file_name) }
     total_wc_detail = calculate_total_wc_detail(wc_details)
@@ -15,19 +15,19 @@ def main
     wc_details = [extract_wc_detail($stdin.read)]
     max_digit = 7
   end
-  formatted_wc_details = format_wc_details(wc_details, max_digit, options)
+  formatted_wc_details = format_wc_details(wc_details, max_digit, output_fields)
   puts formatted_wc_details
 end
 
 def parse_options
   opt = OptionParser.new
-  options = {}
-  opt.on('-l') { options[:nline] = true }
-  opt.on('-w') { options[:nword] = true }
-  opt.on('-c') { options[:byte_size] = true }
+  output_fields = {}
+  opt.on('-l') { output_fields[:nline] = true }
+  opt.on('-w') { output_fields[:nword] = true }
+  opt.on('-c') { output_fields[:byte_size] = true }
   opt.parse!(ARGV)
-  options = { nline: true, nword: true, byte_size: true } if options.empty?
-  [options, ARGV]
+  output_fields = { nline: true, nword: true, byte_size: true } if output_fields.empty?
+  [output_fields, ARGV]
 end
 
 def extract_wc_detail(content, file_name = '')
@@ -44,10 +44,10 @@ def calculate_total_wc_detail(wc_details)
   { nline:, nword:, byte_size:, file_name: 'total' }
 end
 
-def format_wc_details(wc_details, max_digit, options)
-  needs_padding = wc_details.size >= 2 || options.size >= 2
+def format_wc_details(wc_details, max_digit, output_fields)
+  needs_padding = wc_details.size >= 2 || output_fields.size >= 2
   wc_details.map do |wc_elements|
-    output_wc_elements = wc_elements.select { |key, _| options[key] }
+    output_wc_elements = wc_elements.select { |key, _| output_fields[key] }
     formatted_wc_elements = output_wc_elements.values.map do |wc_element|
       needs_padding ? wc_element.to_s.rjust(max_digit) : wc_element.to_s
     end
