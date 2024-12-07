@@ -4,6 +4,8 @@
 require 'optparse'
 require 'etc'
 
+ORDERED_OUTPUT_FIELDS = %i[nline nword byte_size].freeze
+
 def main
   output_fields, file_names = parse_options
   if file_names.any?
@@ -46,12 +48,14 @@ end
 
 def format_wc_details(wc_details, max_digit, output_fields)
   needs_padding = wc_details.size >= 2 || output_fields.size >= 2
-  wc_details.map do |wc_elements|
-    output_wc_elements = wc_elements.select { |key, _| output_fields[key] }
-    formatted_wc_elements = output_wc_elements.values.map do |wc_element|
-      needs_padding ? wc_element.to_s.rjust(max_digit) : wc_element.to_s
+  wc_details.map do |wc_detail|
+    counts = ORDERED_OUTPUT_FIELDS.filter_map do |field|
+      next unless output_fields.key?(field)
+
+      count = wc_detail[field]
+      needs_padding ? count.to_s.rjust(max_digit) : count.to_s
     end
-    [*formatted_wc_elements, wc_elements[:file_name]].join(' ')
+    [*counts, wc_detail[:file_name]].join(' ')
   end
 end
 
