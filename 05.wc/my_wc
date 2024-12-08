@@ -1,0 +1,62 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'optparse'
+require 'etc'
+
+ORDERED_OUTPUT_FIELDS = %i[nline nword byte_size].freeze
+
+def main
+  output_fields, file_names = parse_options
+  if file_names.any?
+    wc_details = file_names.map { |file_name| extract_wc_detail(File.read(file_name), file_name) }
+    total_wc_detail = calculate_total_wc_detail(wc_details)
+    wc_details << total_wc_detail if wc_details.size >= 2
+    max_digit = total_wc_detail[:byte_size].to_s.size
+  else
+    wc_details = [extract_wc_detail($stdin.read)]
+    max_digit = 7
+  end
+  formatted_wc_details = format_wc_details(wc_details, max_digit, output_fields)
+  puts formatted_wc_details
+end
+
+def parse_options
+  opt = OptionParser.new
+  output_fields = {}
+  opt.on('-l') { output_fields[:nline] = true }
+  opt.on('-w') { output_fields[:nword] = true }
+  opt.on('-c') { output_fields[:byte_size] = true }
+  opt.parse!(ARGV)
+  output_fields = { nline: true, nword: true, byte_size: true } if output_fields.empty?
+  [output_fields, ARGV]
+end
+
+def extract_wc_detail(content, file_name = '')
+  nline = content.count("\n")
+  nword = content.gsub(/\t|\n/, ' ').strip.squeeze(' ').count(' ') + 1
+  byte_size = content.bytesize
+  { nline:, nword:, byte_size:, file_name: }
+end
+
+def calculate_total_wc_detail(wc_details)
+  nline = wc_details.sum { |detail| detail[:nline] }
+  nword = wc_details.sum { |detail| detail[:nword] }
+  byte_size = wc_details.sum { |detail| detail[:byte_size] }
+  { nline:, nword:, byte_size:, file_name: 'total' }
+end
+
+def format_wc_details(wc_details, max_digit, output_fields)
+  needs_padding = wc_details.size >= 2 || output_fields.size >= 2
+  wc_details.map do |wc_detail|
+    counts = ORDERED_OUTPUT_FIELDS.filter_map do |field|
+      next unless output_fields.key?(field)
+
+      count = wc_detail[field]
+      needs_padding ? count.to_s.rjust(max_digit) : count.to_s
+    end
+    [*counts, wc_detail[:file_name]].join(' ')
+  end
+end
+
+main
